@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block contenido %}
+<div class="page-heading"><div><h1>{{ "Editar" if producto else "Nuevo" }} producto</h1><p>Un vaso con precio cero se considera el fresco gratuito.{% if not producto %} La base de datos exige un precio mayor que cero al registrar; para el fresco gratuito, regístrelo con un precio y luego edítelo a ₡0.{% endif %}</p></div></div>
+<form class="card form-card" action="{{ url_for('productos.guardar') }}" method="post">
+    <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+    {% if producto %}<input type="hidden" name="id_producto" value="{{ producto.id_producto }}">{% endif %}
+    <div class="card-body">
+        <label>Nombre</label><input class="form-control mb-3" name="nombre" required maxlength="100" pattern="[A-Za-z0-9ÁÉÍÓÚÜÑáéíóúüñ .,'()/%+\-]+" value="{{ producto.nombre if producto else '' }}">
+        <div class="row">
+            <div class="col-md-4"><label>Precio por unidad</label><input class="form-control mb-3" type="number" min="{{ 0 if producto else 0.01 }}" step="0.01" name="precio_unidad" required value="{{ producto.precio_unidad if producto else '' }}"></div>
+            <div class="col-md-4"><label>Unidad</label><select class="form-select mb-3" name="unidad_medida">{% for unidad in unidades %}<option {% if producto and producto.unidad_medida == unidad %}selected{% endif %}>{{ unidad }}</option>{% endfor %}</select></div>
+            <div class="col-md-4"><label>Stock actual</label><input class="form-control mb-3" type="number" min="0" name="stock_unidades" required value="{{ producto.stock_unidades if producto else 0 }}"></div>
+        </div>
+        <label>Estado</label><select class="form-select mb-4" name="activo"><option value="1" {% if not producto or producto.activo %}selected{% endif %}>Activo</option><option value="0" {% if producto and not producto.activo %}selected{% endif %}>Inactivo</option></select>
+        <button class="btn btn-primary">Guardar producto</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('productos.listar') }}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Empleados</h1><p>Personal vinculado con usuarios, producción y reservaciones.</p></div></div>
+{% if puede('empleados.gestionar') %}<form class="card form-inline-card mb-4" method="post" action="{{ url_for('empleados.guardar') }}">
+    <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+    <input class="form-control" name="nombre" placeholder="Nombre" required pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' \-]+">
+    <input class="form-control" name="puesto" placeholder="Puesto" required pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' \-]+">
+    <input class="form-control" name="telefono" placeholder="Teléfono" inputmode="numeric" pattern="[0-9]{8}" maxlength="8">
+    <input class="form-control" type="date" name="fecha_contratacion" required>
+    <select class="form-select" name="activo"><option value="1">Activo</option><option value="0">Inactivo</option></select>
+    <button class="btn btn-primary">Agregar</button>
+</form>
+{% endif %}
+<div class="card"><div class="table-responsive"><table class="table"><thead><tr><th>Nombre</th><th>Puesto</th><th>Teléfono</th><th>Contratación</th><th>Estado</th><th></th></tr></thead>
+<tbody>{% for empleado in empleados %}<tr><td>{{ empleado.nombre }}</td><td>{{ empleado.puesto }}</td><td>{{ empleado.telefono or '—' }}</td><td>{{ empleado.fecha_contratacion }}</td><td>{{ "Activo" if empleado.activo else "Inactivo" }}</td><td>
+{% if puede('empleados.gestionar') %}<button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#empleado-{{ empleado.id_empleado }}">Editar</button>
+<form class="d-inline" method="post" action="{{ url_for('empleados.eliminar', id_empleado=empleado.id_empleado) }}" data-confirmar="¿Eliminar o archivar este empleado?"><input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><button class="btn btn-outline-danger btn-sm">Eliminar</button></form>
+<div class="modal fade" id="empleado-{{ empleado.id_empleado }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content" method="post" action="{{ url_for('empleados.guardar') }}"><div class="modal-header"><h2 class="h5">Editar empleado</h2><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+<input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><input type="hidden" name="id_empleado" value="{{ empleado.id_empleado }}">
+<label>Nombre</label><input class="form-control mb-2" name="nombre" value="{{ empleado.nombre }}" required pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' \-]+">
+<label>Puesto</label><input class="form-control mb-2" name="puesto" value="{{ empleado.puesto }}" required pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' \-]+">
+<label>Teléfono</label><input class="form-control mb-2" name="telefono" value="{{ empleado.telefono or '' }}" inputmode="numeric" pattern="[0-9]{8}" maxlength="8">
+<label>Fecha de contratación</label><input class="form-control mb-2" type="date" name="fecha_contratacion" value="{{ empleado.fecha_contratacion }}" required>
+<label>Estado</label><select class="form-select" name="activo"><option value="1" {% if empleado.activo %}selected{% endif %}>Activo</option><option value="0" {% if not empleado.activo %}selected{% endif %}>Inactivo</option></select>
+</div><div class="modal-footer"><button class="btn btn-primary">Guardar</button></div></form></div></div>
+{% endif %}
+</td></tr>{% endfor %}</tbody></table></div></div>
+{% endblock %}

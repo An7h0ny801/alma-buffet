@@ -1,0 +1,304 @@
+.form-card-narrow {
+    max-width: 620px;
+}
+
+.role-rename {
+    display: flex;
+    gap: 6px;
+    max-width: 280px;
+}
+
+.role-rename .form-control {
+    min-width: 140px;
+}
+
+.matrix-action {
+    flex: 0 0 78px;
+    padding: 3px 0;
+    border-radius: 6px;
+    font-size: .75rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.matrix-action-view {
+    color: var(--success);
+    background: var(--success-soft);
+}
+
+.matrix-action-manage {
+    color: var(--warning);
+    background: var(--warning-soft);
+}
+
+.matrix-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.matrix-actions {
+    display: inline-flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.matrix-pending {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.backup-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 380px) 1fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.backup-path {
+    word-break: break-all;
+}
+
+.backup-summary strong {
+    font-size: 1.15rem;
+    word-break: break-word;
+}
+
+@media (min-width: 992px) {
+    .backup-summary {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 991.98px) {
+    .backup-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.status-neutral {
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.role-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.role-card {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+    color: var(--text);
+    text-align: left;
+    text-decoration: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    transition: border-color .15s, transform .15s;
+}
+
+.role-card:hover {
+    color: var(--text);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.role-card.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent), var(--shadow);
+}
+
+.role-card-icon {
+    display: inline-grid;
+    flex: 0 0 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: 8px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    font-size: 1.2rem;
+}
+
+.role-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.role-card-body strong,
+.role-card-body small {
+    display: block;
+}
+
+.role-card-body strong {
+    font-size: 1.05rem;
+}
+
+.role-card-body small {
+    color: var(--muted);
+}
+
+.role-card-bar {
+    display: block;
+    height: 5px;
+    margin-top: 8px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--surface-3);
+}
+
+.role-card-bar span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+}
+
+.role-card-arrow {
+    color: var(--muted);
+}
+
+.role-card-new {
+    border-style: dashed;
+    box-shadow: none;
+}
+
+.new-role-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 14px;
+}
+
+.role-editor-header {
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.role-editor-tools {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.role-editor-tools .role-rename .form-control {
+    min-width: 160px;
+}
+
+.role-editor-tools .btn {
+    white-space: nowrap;
+}
+
+.perm-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.perm-column {
+    padding: 16px 20px;
+}
+
+.perm-column-available {
+    background: var(--surface-2);
+    border-left: 1px solid var(--border);
+}
+
+.perm-column-title {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.perm-column-title .btn-link {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.perm-empty {
+    padding: 18px;
+    color: var(--muted);
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+}
+
+.perm-group h3 {
+    margin: 14px 0 8px;
+    color: var(--accent);
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.perm-group ul {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.perm-item {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.perm-item[hidden] {
+    display: none;
+}
+
+.perm-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.perm-text strong,
+.perm-text small {
+    display: block;
+}
+
+.perm-text small {
+    color: var(--muted);
+}
+
+.perm-flag {
+    color: var(--warning);
+    font-size: .75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.perm-changed {
+    border-color: var(--warning);
+    box-shadow: inset 3px 0 0 var(--warning);
+}
+
+.perm-item .btn {
+    white-space: nowrap;
+}
+
+@media (max-width: 991.98px) {
+    .perm-columns,
+    .new-role-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .perm-column-available {
+        border-top: 1px solid var(--border);
+        border-left: 0;
+    }
+}

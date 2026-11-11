@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block titulo %}Respaldos - Alma Buffet{% endblock %}
+{% macro tamano(bytes) %}{% if bytes is none %}—{% elif bytes >= 1048576 %}{{ "{:,.2f}".format(bytes / 1048576) }} MB{% else %}{{ "{:,.0f}".format(bytes / 1024) }} KB{% endif %}{% endmacro %}
+{% macro fecha(valor) %}{{ valor|hora_local }}{% endmacro %}
+{% macro tipo_badge(valor) %}<span class="status-badge {{ 'status-success' if valor == 'COMPLETO' else 'status-warning' if valor == 'DIFERENCIAL' else 'status-neutral' }}">{{ {'COMPLETO': 'Completo', 'DIFERENCIAL': 'Diferencial', 'LOG': 'Log'}.get(valor, valor) }}</span>{% endmacro %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Respaldos de la base de datos</h1><p>Copias de seguridad generadas por SQL Server. Cada respaldo queda registrado en el historial y no se puede modificar ni eliminar.</p></div></div>
+
+<div class="summary-strip backup-summary mb-4">
+    <div><span class="summary-icon"><i class="bi bi-database"></i></span><span><small>Base de datos</small><strong>{{ base.nombre }}</strong><em>{{ base.tamanoMB }} MB · {{ base.edicion }}</em></span></div>
+    <div><span class="summary-icon"><i class="bi bi-arrow-repeat"></i></span><span><small>Modelo de recuperación</small><strong>{{ base.modelo }}</strong><em>{{ 'Admite respaldos del log' if admite_log else 'Sin respaldos del log' }}</em></span></div>
+    <div><span class="summary-icon"><i class="bi bi-database-check"></i></span><span><small>Último completo</small><strong>{{ fecha(ultimos.get('COMPLETO')) }}</strong><em>{% if ultimos.get('LOG') %}Último log: {{ fecha(ultimos.get('LOG')) }}{% else %}Sin respaldos del log{% endif %}</em></span></div>
+</div>
+
+<div class="backup-layout mb-4">
+    {% if azure %}
+    <section class="card">
+        <div class="card-header"><span><i class="bi bi-cloud-check"></i> Respaldos automáticos de Azure</span></div>
+        <div class="card-body">
+            <p>Azure SQL Database genera respaldos completos, diferenciales y del log de forma automática y permite restaurar la base a un punto en el tiempo.</p>
+            <p class="mb-0">La restauración se realiza desde el portal de Azure (base de datos &gt; Restaurar). Desde esta pantalla solo se consulta el historial.</p>
+        </div>
+    </section>
+    {% elif puede('respaldos.gestionar') %}
+    <form class="card" method="post" action="{{ url_for('respaldos.generar') }}" data-enviando="Generando respaldo...">
+        <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+        <div class="card-header"><span><i class="bi bi-database-down"></i> Nuevo respaldo</span></div>
+        <div class="card-body">
+            <label class="form-label" for="respaldo-tipo">Tipo de respaldo</label>
+            <select class="form-select mb-3" id="respaldo-tipo" name="tipo" required>
+                {% for clave, nombre in tipos.items() %}
+                <option value="{{ clave }}" {% if clave == 'LOG' and not admite_log %}disabled{% endif %} {% if clave == 'COMPLETO' %}selected{% endif %}>{{ nombre }}</option>
+                {% endfor %}
+            </select>
+            <label class="form-label" for="respaldo-descripcion">Descripción <small class="text-body-secondary">(opcional)</small></label>
+            <input class="form-control mb-3" id="respaldo-descripcion" name="descripcion" maxlength="200" placeholder="Ej.: antes del cierre de mes">
+            <label class="form-check mb-3"><input class="form-check-input" type="checkbox" name="verificar" value="1" checked> <span>Verificar el archivo al terminar (RESTORE VERIFYONLY)</span></label>
+            <button class="btn btn-primary w-100"><i class="bi bi-play-fill"></i> Generar respaldo</button>
+        </div>
+    </form>
+    {% endif %}
+
+    <section class="card">
+        <div class="card-header"><span><i class="bi bi-info-circle"></i> Recomendaciones</span></div>
+        <div class="card-body">
+            <ul class="mb-3">
+                <li><strong>Completo:</strong> diario, fuera del horario del buffet.</li>
+                <li><strong>Diferencial:</strong> a mediodía, si hubo mucho movimiento.</li>
+                <li><strong>Log:</strong> cada hora durante la atención (modelo FULL).</li>
+                <li>Copie los archivos a un disco externo o a la nube una vez por semana.</li>
+            </ul>
+            {% if not azure %}
+            <p class="mb-1"><small class="text-body-secondary">Los archivos se guardan en la carpeta de respaldos configurada en SQL Server:</small></p>
+            <p class="backup-path mb-3"><code>{{ base.carpeta or '—' }}</code></p>
+            {% endif %}
+            <p class="mb-0"><small class="text-body-secondary">Para restaurar en un servidor propio use SQL Server Management Studio (Tareas &gt; Restaurar &gt; Base de datos).</small></p>
+        </div>
+    </section>
+</div>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pestana-app" type="button" role="tab">Historial del sistema <span class="badge text-bg-secondary">{{ historial|length }}</span></button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#pestana-servidor" type="button" role="tab">Historial de SQL Server <span class="badge text-bg-secondary">{{ servidor|length if servidor is not none else '—' }}</span></button></li>
+</ul>
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="pestana-app" role="tabpanel">
+        <div class="card"><div class="table-responsive"><table class="table align-middle">
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Estado</th><th>Archivo</th><th>Tamaño</th><th>Duración</th><th>Empleado</th></tr></thead>
+            <tbody>
+            {% for registro in historial %}
+            <tr class="{{ 'low-stock-row' if registro.estado == 'FALLIDO' }}">
+                <td>{{ fecha(registro.fechaInicio) }}</td>
+                <td>{{ tipo_badge(registro.tipo) }}</td>
+                <td>
+                    {% if registro.estado == 'EXITOSO' %}<span class="status-badge status-success"><i class="bi bi-check2"></i> Exitoso</span>{% else %}<span class="status-badge status-danger"><i class="bi bi-x"></i> Fallido</span>{% endif %}
+                    {% if registro.verificado %}<br><small class="text-body-secondary"><i class="bi bi-patch-check"></i> Verificado</small>{% endif %}
+                </td>
+                <td class="backup-path"><small><code>{{ registro.archivo }}</code></small>{% if registro.descripcion %}<br><small>{{ registro.descripcion }}</small>{% endif %}{% if registro.estado == 'FALLIDO' %}<br><small class="text-danger">{{ registro.mensaje }}</small>{% endif %}</td>
+                <td>{{ tamano(registro.tamanoBytes) }}</td>
+                <td>{{ "{:,.1f}".format(registro.duracionSegundos) }} s</td>
+                <td>{{ registro.empleado or 'Sistema' }}<br><small class="text-body-secondary">{{ registro.usuarioBD or '' }}</small></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7">Todavía no se han generado respaldos desde el sistema.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table></div></div>
+    </div>
+    <div class="tab-pane fade" id="pestana-servidor" role="tabpanel">
+        {% if servidor is none %}
+        {% if azure %}
+        <div class="alert alert-info">Azure SQL Database no expone el historial de <code>msdb</code>. Los respaldos automáticos se consultan en el portal de Azure.</div>
+        {% else %}
+        <div class="alert alert-warning">El usuario de la base de datos no tiene permiso para leer el historial de <code>msdb</code>. Ejecute <code>flask --app run crear-usuario-bd</code> con una cuenta administradora.</div>
+        {% endif %}
+        {% else %}
+        <div class="card">
+            <div class="card-header"><span>Todos los respaldos de esta base que registró SQL Server (incluidos los hechos desde SSMS o con scripts)</span></div>
+            <div class="table-responsive"><table class="table align-middle">
+                <thead><tr><th>Fecha</th><th>Tipo</th><th>Archivo</th><th>Tamaño</th><th>Login</th></tr></thead>
+                <tbody>
+                {% for registro in servidor %}
+                <tr><td>{{ fecha(registro.fin) }}</td><td>{{ tipo_badge(registro.tipo) }}</td><td class="backup-path"><small><code>{{ registro.archivo }}</code></small>{% if registro.nombre %}<br><small>{{ registro.nombre }}</small>{% endif %}</td><td>{{ tamano(registro.tamano) }}</td><td><small>{{ registro.usuario }}</small></td></tr>
+                {% else %}
+                <tr><td colspan="5">SQL Server no tiene respaldos registrados de esta base.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

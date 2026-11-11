@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block titulo %}Ticket #{{ ticket.id_ticket }} - Bitácora{% endblock %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Ticket #{{ ticket.id_ticket }}</h1><p>Consulta de solo lectura desde la bitácora.</p></div><a class="btn btn-outline-secondary" href="{{ url_for('bitacoras.listar') }}">Volver</a></div>
+<section class="card invoice-card">
+    <div class="card-body">
+        <div class="summary-strip">
+            <div><small>Estado</small><strong>{{ ticket.estado }}</strong></div>
+            <div><small>Modalidad</small><strong>{{ ticket.modalidad }}</strong></div>
+            <div><small>Empleado</small><strong>{{ ticket.usuario.nombre }}</strong></div>
+            <div><small>Fecha</small><strong>{{ ticket.fecha }} {{ ticket.hora_inicio.strftime('%H:%M') }}</strong></div>
+        </div>
+        <div class="table-responsive mt-4"><table class="table"><thead><tr><th>Producto</th><th>Unidad</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>{% for detalle in ticket.detalles %}<tr><td>{{ detalle.producto.nombre }}</td><td>{{ detalle.producto.unidad_medida }}</td><td>{{ detalle.cantidad_unidades }}</td><td>₡{{ "{:,.2f}".format(detalle.precio_unidad) }}</td><td>₡{{ "{:,.2f}".format(detalle.subtotal) }}</td></tr>{% endfor %}</tbody></table></div>
+        <div class="invoice-total"><span>Subtotal <strong>₡{{ "{:,.2f}".format(ticket.subtotal) }}</strong></span><span>IVA 13% <strong>₡{{ "{:,.2f}".format(ticket.impuesto) }}</strong></span><span>Total <strong>₡{{ "{:,.2f}".format(ticket.total) }}</strong></span></div>
+        {% if ticket.pago %}<p class="mt-3 mb-0"><strong>Pago:</strong> {{ ticket.pago.metodo_pago }}{% if ticket.pago.referencia %} · {{ ticket.pago.referencia }}{% endif %}</p>{% endif %}
+    </div>
+</section>
+{% endblock %}

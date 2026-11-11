@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios - Alma Buffet{% endblock %}
+{% block contenido %}
+<div class="page-heading">
+    <div><h1>Usuarios</h1><p>Accesos vinculados con empleados y roles.</p></div>
+</div>
+
+<form class="card form-card-wide mb-4" method="post" action="{{ url_for('usuarios.guardar') }}">
+    <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+    <div class="card-header"><span><i class="bi bi-person-plus"></i> Nuevo usuario</span></div>
+    <div class="card-body row g-3">
+        <div class="col-md-4"><label class="form-label">Empleado</label><select class="form-select" name="id_empleado" required><option value="">Seleccione</option>{% for empleado in empleados %}<option value="{{ empleado.id_empleado }}" {% if empleado.usuario %}disabled{% endif %}>{{ empleado.nombre }}{% if empleado.usuario %} · con usuario{% endif %}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label">Correo</label><input class="form-control" type="email" name="correo" required maxlength="120"></div>
+        <div class="col-md-4"><label class="form-label">Rol</label><select class="form-select" name="id_rol" required>{% for rol in roles %}<option value="{{ rol.id_rol }}">{{ rol.nombre }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label">Contraseña temporal</label><input class="form-control" type="password" name="password" required minlength="8"></div>
+        <div class="col-md-4"><label class="form-label">Estado</label><select class="form-select" name="activo"><option value="1">Activo</option><option value="0">Inactivo</option></select></div>
+        <div class="col-md-4 d-flex align-items-end"><label class="form-check"><input class="form-check-input" type="checkbox" name="debe_cambiar_password" value="1" checked> Solicitar cambio de contraseña</label></div>
+        <div class="col-12"><button class="btn btn-primary">Crear usuario</button></div>
+    </div>
+</form>
+
+<section class="card">
+    <div class="table-responsive"><table class="table align-middle">
+        <thead><tr><th>Empleado</th><th>Correo</th><th>Rol</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+            <td>{{ usuario.nombre }}</td><td>{{ usuario.correo }}</td><td>{{ usuario.rol.nombre }}</td>
+            <td><span class="status-badge {{ 'status-success' if usuario.activo else 'status-danger' }}">{{ 'Activo' if usuario.activo else 'Inactivo' }}</span></td>
+            <td class="text-end">
+                <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#usuario-{{ usuario.id_usuario }}">Editar</button>
+                <form class="d-inline" method="post" action="{{ url_for('usuarios.eliminar', id_usuario=usuario.id_usuario) }}" data-confirmar="¿Eliminar o desactivar este usuario?">
+                    <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><button class="btn btn-outline-danger btn-sm">Eliminar</button>
+                </form>
+                <div class="modal fade" id="usuario-{{ usuario.id_usuario }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content text-start" method="post" action="{{ url_for('usuarios.guardar') }}">
+                    <div class="modal-header"><h2 class="h5">Editar usuario</h2><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><input type="hidden" name="id_usuario" value="{{ usuario.id_usuario }}">
+                        <label class="form-label">Empleado</label><select class="form-select mb-3" name="id_empleado" required>{% for empleado in empleados %}<option value="{{ empleado.id_empleado }}" {% if empleado.id_empleado == usuario.id_empleado %}selected{% elif empleado.usuario %}disabled{% endif %}>{{ empleado.nombre }}</option>{% endfor %}</select>
+                        <label class="form-label">Correo</label><input class="form-control mb-3" type="email" name="correo" value="{{ usuario.correo }}" required>
+                        <label class="form-label">Rol</label><select class="form-select mb-3" name="id_rol">{% for rol in roles %}<option value="{{ rol.id_rol }}" {% if rol.id_rol == usuario.id_rol %}selected{% endif %}>{{ rol.nombre }}</option>{% endfor %}</select>
+                        <label class="form-label">Nueva contraseña (opcional)</label><input class="form-control mb-3" type="password" name="password" minlength="8">
+                        <label class="form-label">Estado</label><select class="form-select mb-3" name="activo"><option value="1" {% if usuario.activo %}selected{% endif %}>Activo</option><option value="0" {% if not usuario.activo %}selected{% endif %}>Inactivo</option></select>
+                        <label class="form-check"><input class="form-check-input" type="checkbox" name="debe_cambiar_password" value="1" {% if usuario.debe_cambiar_password %}checked{% endif %}> Solicitar cambio de contraseña</label>
+                    </div>
+                    <div class="modal-footer"><button class="btn btn-primary">Guardar</button></div>
+                </form></div></div>
+            </td>
+        </tr>
+        {% else %}<tr><td colspan="5" class="empty-state">No hay usuarios.</td></tr>{% endfor %}
+        </tbody>
+    </table></div>
+</section>
+{% endblock %}

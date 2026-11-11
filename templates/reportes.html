@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Reportes</h1><p>Ventas, productos, métodos de pago y producción.</p></div></div>
+<form class="card form-inline-card mb-4" method="get">
+    <input class="form-control" type="date" name="desde" value="{{ desde or '' }}">
+    <input class="form-control" type="date" name="hasta" value="{{ hasta or '' }}">
+    <button class="btn btn-primary">Filtrar</button>
+    <a class="btn btn-outline-danger" href="{{ url_for('reportes.ventas_pdf', desde=desde, hasta=hasta) }}">PDF</a>
+</form>
+<div class="metric-grid mb-4"><div class="metric-card"><span>Pagos</span><strong>{{ pagos|length }}</strong></div><div class="metric-card"><span>Ingresos</span><strong>₡{{ "{:,.2f}".format(ingresos) }}</strong></div></div>
+<div class="row g-4">
+<div class="col-lg-7"><div class="card"><div class="card-header">Productos vendidos</div><div class="table-responsive"><table class="table"><thead><tr><th>Producto</th><th>Unidad</th><th>Cantidad</th></tr></thead><tbody>{% for p in productos %}<tr><td>{{ p.nombre }}</td><td>{{ p.unidad_medida }}</td><td>{{ p.cantidad }}</td></tr>{% else %}<tr><td colspan="3">Sin ventas.</td></tr>{% endfor %}</tbody></table></div></div></div>
+<div class="col-lg-5"><div class="card"><div class="card-header">Métodos de pago</div><div class="card-body"><canvas id="paymentChart"></canvas></div></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}">
+const labels = {{ metodos.keys()|list|tojson }};
+const values = {{ metodos.values()|list|tojson }};
+let paymentChart;
+function renderPaymentChart() {
+    if (!labels.length) return;
+    const styles = getComputedStyle(document.documentElement);
+    paymentChart?.destroy();
+    paymentChart = new Chart(document.getElementById("paymentChart"), {
+        type: "doughnut",
+        data: {labels, datasets: [{data: values, backgroundColor: ["#20b2b7", "#f0a83e", "#55c985"]}]},
+        options: {plugins: {legend: {position: "bottom", labels: {color: styles.getPropertyValue("--text").trim()}}}}
+    });
+}
+renderPaymentChart();
+window.addEventListener("alma:theme", renderPaymentChart);
+</script>
+{% endblock %}

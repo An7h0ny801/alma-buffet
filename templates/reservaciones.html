@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block titulo %}Reservaciones - Alma Buffet{% endblock %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Reservaciones</h1><p>Cada reservación bloquea la mesa durante dos horas.</p></div></div>
+{% if puede('reservaciones.gestionar') %}<form class="card form-card-wide mb-4" method="post" action="{{ url_for('reservaciones.guardar') }}">
+    <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+    <div class="card-header"><span><i class="bi bi-calendar-plus"></i> Nueva reservación</span></div>
+    <div class="card-body">
+        <div class="client-mode">
+            <label><input type="radio" name="client_mode" value="existing" data-client-mode checked> Cliente existente</label>
+            <label><input type="radio" name="client_mode" value="new" data-client-mode> Registrar cliente nuevo</label>
+        </div>
+        <div data-existing-client class="mb-3">
+            <label class="form-label">Cliente</label>
+            <select class="form-select" name="id_cliente">
+                <option value="">Seleccione un cliente</option>
+                {% for opcion_cliente in clientes %}<option value="{{ opcion_cliente.id_cliente }}">{{ opcion_cliente.nombre }}</option>{% endfor %}
+            </select>
+        </div>
+        <div data-new-client class="d-none">
+            <div class="row g-3 mb-3">
+                <div class="col-md-6"><label class="form-label">Nombre completo</label><input class="form-control" name="nuevo_cliente_nombre" pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ' \-]+"></div>
+                <div class="col-md-3"><label class="form-label">Teléfono</label><input class="form-control" name="nuevo_cliente_telefono" inputmode="numeric" pattern="[0-9]{8}" maxlength="8"></div>
+                <div class="col-md-3"><label class="form-label">Correo</label><input class="form-control" type="email" name="nuevo_cliente_email"></div>
+                <div class="col-12"><label class="form-label">Dirección</label><input class="form-control" name="nuevo_cliente_direccion"></div>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-3"><label class="form-label">Mesa</label><select class="form-select" name="id_mesa" required>{% for opcion_mesa in mesas %}<option value="{{ opcion_mesa.id_mesa }}">Mesa {{ opcion_mesa.numero_mesa }} · {{ opcion_mesa.capacidad }} personas</option>{% endfor %}</select></div>
+            <div class="col-md-3"><label class="form-label">Personas</label><input class="form-control" type="number" min="1" name="cantidad_personas" required></div>
+            <div class="col-md-3"><label class="form-label">Fecha</label><input class="form-control" type="date" name="fecha" required></div>
+            <div class="col-md-3"><label class="form-label">Hora</label><input class="form-control" type="time" name="hora_reserva" required></div>
+        </div>
+        <input type="hidden" name="estado" value="Confirmada">
+        <button class="btn btn-primary mt-4"><i class="bi bi-calendar-check"></i> Crear reservación</button>
+    </div>
+</form>
+{% endif %}
+
+<section class="card">
+    <div class="card-header"><span><i class="bi bi-calendar3"></i> Reservaciones registradas</span></div>
+    <div class="table-responsive">
+        <table class="table align-middle"><thead><tr><th>Cliente</th><th>Mesa</th><th>Personas</th><th>Fecha y hora</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+        <tbody>
+        {% for reservacion in reservaciones %}
+        <tr>
+            <td><strong>{{ reservacion.cliente.nombre }}</strong></td>
+            <td>Mesa {{ reservacion.mesa.numero_mesa }}</td>
+            <td>{{ reservacion.cantidad_personas }}</td>
+            <td>{{ reservacion.fecha }} · {{ reservacion.hora_reserva.strftime('%H:%M') }}</td>
+            <td><span class="status-badge {{ 'status-success' if reservacion.estado == 'Confirmada' else 'status-danger' if reservacion.estado == 'Cancelada' else 'status-warning' }}">{{ reservacion.estado }}</span></td>
+            <td class="text-end">
+                {% if puede('reservaciones.gestionar') %}<button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#reserva-{{ reservacion.id_reservacion }}"><i class="bi bi-pencil"></i>Editar</button>
+                {% if reservacion.estado != 'Cancelada' %}<form class="d-inline" method="post" action="{{ url_for('reservaciones.cancelar', id_reservacion=reservacion.id_reservacion) }}"><input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><button class="btn btn-outline-danger btn-sm">Cancelar</button></form>{% endif %}
+                <form class="d-inline" method="post" action="{{ url_for('reservaciones.eliminar', id_reservacion=reservacion.id_reservacion) }}" data-confirmar="¿Eliminar la reservación? El cliente también se eliminará si no tiene otras reservas."><input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><button class="btn btn-danger btn-sm">Eliminar</button></form>
+                <div class="modal fade" id="reserva-{{ reservacion.id_reservacion }}" tabindex="-1"><div class="modal-dialog"><form class="modal-content text-start" method="post" action="{{ url_for('reservaciones.guardar') }}">
+                    <div class="modal-header"><h2 class="h5">Editar reservación</h2><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                    <div class="modal-body">
+                        <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><input type="hidden" name="id_reservacion" value="{{ reservacion.id_reservacion }}">
+                        <label class="form-label">Cliente</label><select class="form-select mb-3" name="id_cliente">{% for opcion_cliente in clientes %}<option value="{{ opcion_cliente.id_cliente }}" {% if opcion_cliente.id_cliente == reservacion.id_cliente %}selected{% endif %}>{{ opcion_cliente.nombre }}</option>{% endfor %}</select>
+                        <label class="form-label">Mesa</label><select class="form-select mb-3" name="id_mesa">{% for opcion_mesa in mesas %}<option value="{{ opcion_mesa.id_mesa }}" {% if opcion_mesa.id_mesa == reservacion.id_mesa %}selected{% endif %}>Mesa {{ opcion_mesa.numero_mesa }}</option>{% endfor %}</select>
+                        <div class="row g-3"><div class="col-4"><label class="form-label">Personas</label><input class="form-control" type="number" min="1" name="cantidad_personas" value="{{ reservacion.cantidad_personas }}" required></div><div class="col-4"><label class="form-label">Fecha</label><input class="form-control" type="date" name="fecha" value="{{ reservacion.fecha }}" required></div><div class="col-4"><label class="form-label">Hora</label><input class="form-control" type="time" name="hora_reserva" value="{{ reservacion.hora_reserva.strftime('%H:%M') }}" required></div></div>
+                        <label class="form-label mt-3">Estado</label><select class="form-select" name="estado">{% for opcion_estado in ['Pendiente','Confirmada','Cancelada'] %}<option {% if opcion_estado == reservacion.estado %}selected{% endif %}>{{ opcion_estado }}</option>{% endfor %}</select>
+                    </div>
+                    <div class="modal-footer"><button class="btn btn-primary">Guardar cambios</button></div>
+                </form></div></div>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}<tr><td colspan="6" class="empty-state">No hay reservaciones.</td></tr>{% endfor %}
+        </tbody></table>
+    </div>
+</section>
+{% endblock %}

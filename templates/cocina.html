@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titulo %}Cocina e inventario{% endblock %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Cocina e inventario</h1><p>Alertas automáticas cuando quedan tres unidades o menos.</p></div></div>
+<div class="alert-grid mb-4">
+{% for producto in alertas %}
+    <div class="stock-alert">
+        <i class="bi bi-exclamation-octagon"></i>
+        <div><strong>{{ producto.nombre }}</strong><span>Quedan {{ producto.stock_unidades }} {{ producto.unidad_medida|lower }}(s)</span></div>
+        <span class="badge bg-danger">{% if producto.unidad_medida == 'Botella' %}Reponer{% else %}Preparar{% endif %}</span>
+    </div>
+{% else %}
+    <div class="card p-4">No hay productos con inventario bajo.</div>
+{% endfor %}
+</div>
+<div class="row g-4">
+    <div class="col-lg-5">
+        <form class="card" action="{{ url_for('cocina.registrar_produccion') }}" method="post">
+            <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+            <div class="card-header">Registrar producción o reposición</div>
+            <div class="card-body">
+                <label>Producto</label>
+                <select class="form-select mb-3" name="id_producto">{% for producto in productos %}<option value="{{ producto.id_producto }}">{{ producto.nombre }} · {{ producto.stock_unidades }} disponibles</option>{% endfor %}</select>
+                <label>Cantidad de unidades</label>
+                <input class="form-control mb-3" type="number" min="1" name="cantidad" required>
+                <button class="btn btn-primary w-100">Agregar al inventario</button>
+            </div>
+        </form>
+    </div>
+    <div class="col-lg-7">
+        <div class="card"><div class="card-header">Últimos movimientos</div>
+        <div class="table-responsive"><table class="table"><thead><tr><th>Producto</th><th>Cantidad</th><th>Empleado</th><th>Fecha</th></tr></thead>
+        <tbody>{% for produccion in producciones %}<tr><td>{{ produccion.producto.nombre }}</td><td>+{{ produccion.cantidad_producida_unidades }}</td><td>{{ produccion.empleado.nombre }}</td><td>{{ produccion.fecha }} {{ produccion.hora.strftime('%H:%M') }}</td></tr>{% else %}<tr><td colspan="4">Sin movimientos.</td></tr>{% endfor %}</tbody></table></div></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Caja - Alma Buffet{% endblock %}
+{% block contenido %}
+<div class="page-heading">
+    <div><h1>Cola de caja</h1><p>Tickets preparados por el personal de mostrador.</p></div>
+    {% if local_lleno %}<div class="full-house"><i class="bi bi-exclamation-triangle"></i><span><strong>Local lleno</strong><small>Ofrecer el pedido para llevar</small></span></div>{% endif %}
+</div>
+
+<div class="summary-strip">
+    <div><span class="summary-icon"><i class="bi bi-receipt"></i></span><span><small>Tickets pendientes</small><strong>{{ pendientes|length }}</strong><em>Listos para cobrar</em></span></div>
+    <div><span class="summary-icon"><i class="bi bi-grid-3x3-gap"></i></span><span><small>Mesas disponibles</small><strong>{{ mesas_disponibles }}</strong><em>De {{ mesas_totales }} mesas totales</em></span></div>
+</div>
+
+<section class="card queue-card">
+    <div class="card-header">
+        <span><i class="bi bi-list-check"></i> Tickets en cola</span>
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-accion="recargar"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle queue-table">
+            <thead><tr><th>Ticket</th><th>Hora</th><th>Unidades</th><th>Subtotal</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <tbody>
+            {% for ticket in pendientes %}
+            <tr>
+                <td data-label="Ticket"><strong>#{{ ticket.id_ticket }}</strong></td>
+                <td data-label="Hora">{{ ticket.hora_inicio.strftime('%H:%M') }}</td>
+                <td data-label="Unidades">{{ ticket.detalles|sum(attribute='cantidad_unidades') }}</td>
+                <td data-label="Subtotal">₡{{ "{:,.2f}".format(ticket.subtotal) }}</td>
+                <td data-label="Estado"><span class="status-badge status-warning"><i class="bi bi-clock"></i> Pendiente</span></td>
+                <td data-label="Acciones" class="text-end action-cell">
+                    <a class="btn btn-primary btn-sm" href="{{ url_for('tickets.cobrar', id_ticket=ticket.id_ticket) }}"><img class="button-icon" src="{{ url_for('static', filename='icons/cash-register.svg') }}" alt="">Cobrar</a>
+                    <form action="{{ url_for('tickets.anular', id_ticket=ticket.id_ticket) }}" method="post" class="d-inline" data-confirmar="¿Anular y devolver inventario?">
+                        <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+                        <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg"></i>Anular</button>
+                    </form>
+                </td>
+            </tr>
+            {% else %}<tr><td colspan="6" class="empty-state"><i class="bi bi-check2-circle"></i><strong>No hay tickets esperando en caja.</strong></td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer">Mostrando {{ pendientes|length }} ticket{{ '' if pendientes|length == 1 else 's' }}</div>
+</section>
+{% endblock %}

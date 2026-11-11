@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/alma-buffet.svg') }}">
+    <script nonce="{{ csp_nonce() }}">document.documentElement.dataset.bsTheme = localStorage.getItem("alma-theme") || "dark";</script>
+    <title>Error {{ codigo }} - Alma Buffet</title>
+    <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+</head>
+<body class="standalone-page">
+<main class="error-page">
+    <span class="error-icon"><i class="bi bi-exclamation-triangle"></i></span>
+    <strong>{{ codigo }}</strong><h1>No se pudo completar la operación</h1><p>{{ mensaje }}</p>
+    <a class="btn btn-primary" href="{{ url_for('panel.inicio') if usuario_actual else url_for('autenticacion.login') }}"><i class="bi bi-arrow-left"></i> Volver</a>
+</main>
+</body>
+</html>

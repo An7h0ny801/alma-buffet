@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titulo %}Mesas - Alma Buffet{% endblock %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Estado del local</h1><p>Las mesas se ocupan al pagar y se liberan cuando el cliente se retira.</p></div></div>
+{% if puede('mesas.gestionar') %}
+<form class="card form-inline-card mb-4" method="post" action="{{ url_for('mesas.guardar') }}">
+    <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+    <input class="form-control" type="number" min="1" name="numero_mesa" placeholder="Número" required>
+    <input class="form-control" type="number" min="1" name="capacidad" placeholder="Capacidad" required>
+    <button class="btn btn-primary">Agregar mesa</button>
+</form>
+{% endif %}
+<div class="table-map">
+{% for mesa in mesas %}
+<div class="table-card {% if not mesa.activo %}opacity-50{% elif mesa.id_mesa in ocupadas %}table-occupied{% else %}table-free{% endif %}">
+    <span>Mesa</span><strong>{{ mesa.numero_mesa }}</strong><small>{{ mesa.capacidad }} personas</small>
+    {% if not mesa.activo %}
+        <span class="status">Archivada</span>
+    {% elif mesa.id_mesa in ocupadas %}
+        <span class="status">Ocupada o reservada</span>
+        {% if tickets_activos.get(mesa.id_mesa) and puede('caja.gestionar') %}
+        <form method="post" action="{{ url_for('mesas.liberar', id_mesa=mesa.id_mesa) }}">
+            <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><button class="btn btn-sm btn-light">Liberar mesa</button>
+        </form>
+        {% endif %}
+    {% else %}<span class="status">Disponible</span>{% endif %}
+    {% if puede('mesas.gestionar') %}
+    <details class="w-100 mt-2">
+        <summary>Editar</summary>
+        <form method="post" action="{{ url_for('mesas.guardar') }}" class="mt-2">
+            <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+            <input type="hidden" name="id_mesa" value="{{ mesa.id_mesa }}">
+            <input class="form-control form-control-sm mb-2" type="number" name="numero_mesa" min="1" value="{{ mesa.numero_mesa }}" required>
+            <input class="form-control form-control-sm mb-2" type="number" name="capacidad" min="1" value="{{ mesa.capacidad }}" required>
+            <button class="btn btn-primary btn-sm">Guardar</button>
+        </form>
+    </details>
+    {% if mesa.activo %}<form class="w-100 mt-2" method="post" action="{{ url_for('mesas.eliminar', id_mesa=mesa.id_mesa) }}" data-confirmar="¿Eliminar o archivar esta mesa?">
+        <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><button class="btn btn-outline-danger btn-sm w-100">Eliminar</button>
+    </form>{% endif %}
+    {% endif %}
+</div>
+{% endfor %}
+</div>
+{% endblock %}

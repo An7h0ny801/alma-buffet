@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% macro lista_cambios(registro, tipo) %}
+{% for etiqueta, anterior, nuevo in cambios(registro, campos[tipo]) %}<div><small>{{ etiqueta }}:</small> {% if registro.accion == 'UPDATE' and anterior is not none %}<span class="text-decoration-line-through opacity-75">{{ anterior }}</span> → {% endif %}<strong>{{ nuevo }}</strong></div>{% endfor %}
+{% endmacro %}
+{% macro origen(registro) %}
+{% if registro.usuario_bd %}<small>{{ registro.usuario_bd }}<br>{{ registro.aplicacion or registro.equipo }}</small>{% else %}<small class="opacity-75">Migrado</small>{% endif %}
+{% endmacro %}
+{% macro accion(valor) %}
+<span class="status-badge {{ 'status-success' if valor in ['INSERT', 'LOGIN_OK'] else 'status-danger' if valor in ['DELETE', 'LOGIN_FALLIDO'] else 'status-warning' }}">{{ valor }}</span>
+{% endmacro %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Bitácoras y auditoría</h1><p>Registros generados por los triggers de SQL Server y por los inicios de sesión. No se pueden modificar ni eliminar.</p></div></div>
+{% if intentos_fallidos %}
+<div class="alert alert-warning"><strong>Intentos fallidos de inicio de sesión en las últimas 24 horas:</strong>
+{% for intento in intentos_fallidos %}{{ intento.correo }} ({{ intento.intentosFallidos }}){% if not loop.last %}, {% endif %}{% endfor %}</div>
+{% endif %}
+<ul class="nav nav-tabs mb-3" role="tablist">
+{% for clave, titulo, registros in [('productos', 'Productos', productos), ('reservaciones', 'Reservaciones', reservaciones), ('detalles', 'Detalles de ticket', detalles), ('caja', 'Caja', caja), ('seguridad', 'Seguridad', seguridad), ('sesiones', 'Sesiones', sesiones)] %}
+<li class="nav-item" role="presentation"><button class="nav-link {{ 'active' if loop.first }}" data-bs-toggle="tab" data-bs-target="#pestana-{{ clave }}" type="button" role="tab">{{ titulo }} <span class="badge text-bg-secondary">{{ registros|length }}</span></button></li>
+{% endfor %}
+</ul>
+<div class="tab-content">
+<div class="tab-pane fade show active" id="pestana-productos" role="tabpanel"><div class="card"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Acción</th><th>Empleado</th><th>Producto</th><th>Cambio</th><th>Origen</th></tr></thead><tbody>
+{% for registro in productos %}<tr><td>{{ registro.fecha_cambio|hora_local }}</td><td>{{ accion(registro.accion) }}</td><td>{{ empleados.get(registro.id_empleado, 'Sistema') }}</td><td>#{{ registro.id_producto }} {{ registro.nombre }}</td><td>{{ lista_cambios(registro, 'producto') }}</td><td>{{ origen(registro) }}</td></tr>
+{% else %}<tr><td colspan="6">Sin registros.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+<div class="tab-pane fade" id="pestana-reservaciones" role="tabpanel"><div class="card"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Acción</th><th>Empleado</th><th>Reservación</th><th>Cambio</th><th>Origen</th></tr></thead><tbody>
+{% for registro in reservaciones %}<tr><td>{{ registro.fecha_cambio|hora_local }}</td><td>{{ accion(registro.accion) }}</td><td>{{ empleados.get(registro.id_empleado, 'Sistema') }}</td><td>#{{ registro.id_reservacion }}</td><td>{{ lista_cambios(registro, 'reserva') }}</td><td>{{ origen(registro) }}</td></tr>
+{% else %}<tr><td colspan="6">Sin registros.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+<div class="tab-pane fade" id="pestana-detalles" role="tabpanel"><div class="card"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Acción</th><th>Empleado</th><th>Ticket</th><th>Cambio</th><th>Origen</th></tr></thead><tbody>
+{% for registro in detalles %}<tr><td>{{ registro.fecha_cambio|hora_local }}</td><td>{{ accion(registro.accion) }}</td><td>{{ empleados.get(registro.id_empleado, 'Sistema') }}</td><td>{% if registro.id_ticket %}<a href="{{ url_for('bitacoras.ticket', id_ticket=registro.id_ticket) }}">Ticket #{{ registro.id_ticket }}</a>{% else %}Detalle #{{ registro.id_detalle }}{% endif %}<br><small>Producto {{ registro.id_producto }}</small></td><td>{{ lista_cambios(registro, 'detalle') }}</td><td>{{ origen(registro) }}</td></tr>
+{% else %}<tr><td colspan="6">Sin registros.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+<div class="tab-pane fade" id="pestana-caja" role="tabpanel"><div class="card"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Acción</th><th>Empleado</th><th>Registro</th><th>Cambio</th><th>Origen</th></tr></thead><tbody>
+{% for registro in caja %}<tr class="{{ 'low-stock-row' if registro.estado_nuevo == 'Anulado' or registro.tabla_afectada == 'pagos' }}"><td>{{ registro.fecha_hora|hora_local }}</td><td>{{ accion(registro.accion) }}</td><td>{{ empleados.get(registro.id_empleado, 'Sistema') }}</td><td>{{ registro.tabla_afectada|capitalize }} #{{ registro.id_registro }}{% if registro.id_ticket %}<br><a href="{{ url_for('bitacoras.ticket', id_ticket=registro.id_ticket) }}"><small>Ticket #{{ registro.id_ticket }}</small></a>{% endif %}{% if registro.monto_ticket is not none %}<br><small>Monto del ticket: ₡{{ "{:,.2f}".format(registro.monto_ticket) }}</small>{% endif %}</td><td>{{ lista_cambios(registro, 'caja') }}</td><td>{{ origen(registro) }}</td></tr>
+{% else %}<tr><td colspan="6">Sin registros.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+<div class="tab-pane fade" id="pestana-seguridad" role="tabpanel"><div class="card"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Acción</th><th>Empleado</th><th>Objeto</th><th>Cambio</th><th>Origen</th></tr></thead><tbody>
+{% for registro in seguridad %}<tr><td>{{ registro.fecha_hora|hora_local }}</td><td>{{ accion(registro.accion) }}</td><td>{{ empleados.get(registro.id_empleado, 'Sistema') }}</td><td>{{ registro.tabla_afectada }}{% if registro.id_registro %} #{{ registro.id_registro }}{% endif %}</td><td>
+{% if registro.tabla_afectada == 'usuarios' %}{% for etiqueta, anterior, nuevo in cambios(registro, campos['seguridad']) %}<div><small>{{ etiqueta }}:</small> {% if registro.accion == 'UPDATE' and anterior is not none %}<span class="text-decoration-line-through opacity-75">{{ roles.get(anterior, anterior) if etiqueta == 'Rol' else anterior }}</span> → {% endif %}<strong>{{ roles.get(nuevo, nuevo) if etiqueta == 'Rol' else nuevo }}</strong></div>{% endfor %}{% if registro.cambio_password %}<div><small>Contraseña:</small> <strong>cambiada</strong></div>{% endif %}
+{% elif registro.tabla_afectada == 'roles_permisos' %}{{ 'Se otorgó' if registro.accion == 'INSERT' else 'Se retiró' }} «{{ permisos.get(registro.id_permiso, registro.id_permiso) }}» al rol {{ roles.get(registro.id_registro, registro.id_registro) }}
+{% else %}<small><code>{{ (registro.detalle or '')[:160] }}</code></small>{% endif %}
+</td><td>{{ origen(registro) }}</td></tr>
+{% else %}<tr><td colspan="6">Sin registros.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+<div class="tab-pane fade" id="pestana-sesiones" role="tabpanel"><div class="card"><div class="table-responsive"><table class="table align-middle"><thead><tr><th>Fecha</th><th>Evento</th><th>Correo</th><th>Empleado</th><th>Dirección IP</th><th>Navegador</th></tr></thead><tbody>
+{% for registro in sesiones %}<tr><td>{{ registro.fecha_hora|hora_local }}</td><td>{{ accion(registro.evento) }}</td><td>{{ registro.correo }}</td><td>{{ empleados.get(registro.id_empleado, '—') if registro.id_empleado else '—' }}</td><td>{{ registro.direccion_ip or '—' }}</td><td><small>{{ (registro.navegador or '—')[:60] }}</small></td></tr>
+{% else %}<tr><td colspan="6">Sin registros.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+</div>
+{% endblock %}

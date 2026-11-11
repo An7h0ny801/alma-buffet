@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/alma-buffet.svg') }}">
+    <script nonce="{{ csp_nonce() }}">
+        document.documentElement.dataset.bsTheme = localStorage.getItem("alma-theme") || "dark";
+    </script>
+    <title>{% block titulo %}Alma Buffet{% endblock %}</title>
+    <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css', v='1.5.2') }}" rel="stylesheet">
+</head>
+<body>
+{% set nombres_pagina = {
+    'panel.inicio': 'Dashboard',
+    'tickets.mostrador': 'Mostrador',
+    'tickets.caja': 'Caja',
+    'tickets.cobrar': 'Cobrar ticket',
+    'tickets.factura': 'Factura',
+    'cocina.inicio': 'Cocina e inventario',
+    'productos.listar': 'Productos',
+    'productos.nuevo': 'Nuevo producto',
+    'productos.editar': 'Editar producto',
+    'mesas.listar': 'Mesas',
+    'clientes.listar': 'Clientes',
+    'reservaciones.listar': 'Reservaciones',
+    'empleados.listar': 'Empleados',
+    'usuarios.listar': 'Usuarios',
+    'roles.listar': 'Roles y permisos',
+    'bitacoras.listar': 'Bitácoras',
+    'bitacoras.ticket': 'Detalle de ticket',
+    'reportes.inicio': 'Reportes',
+    'respaldos.listar': 'Respaldos'
+} %}
+{% set nombre_pagina = nombres_pagina.get(endpoint_actual, 'Alma Buffet') %}
+
+<aside class="sidebar offcanvas-lg offcanvas-start" id="sidebar" tabindex="-1">
+    <div class="offcanvas-header d-lg-none">
+        <strong>Alma Buffet</strong>
+        <button class="btn-close" type="button" data-sidebar-close aria-label="Cerrar"></button>
+    </div>
+    <a class="brand" href="{{ url_for('panel.inicio') }}">
+        <span class="brand-mark"><i class="bi bi-cup-hot"></i></span>
+        <span><strong>Alma Buffet</strong><small>Gestión de mostrador e inventario</small></span>
+    </a>
+    <div class="nav-label">Menú principal</div>
+    <nav class="sidebar-nav">
+        <a class="{{ 'active' if endpoint_actual == 'panel.inicio' }}" href="{{ url_for('panel.inicio') }}"><i class="bi bi-house"></i><span>Dashboard</span></a>
+        {% if puede('mostrador.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'tickets.mostrador' }}" href="{{ url_for('tickets.mostrador') }}"><i class="bi bi-basket2"></i><span>Mostrador</span></a>
+        {% endif %}
+        {% if puede('caja.ver') %}
+        <a class="{{ 'active' if endpoint_actual in ['tickets.caja', 'tickets.cobrar', 'tickets.factura'] }}" href="{{ url_for('tickets.caja') }}"><img class="nav-icon-image" src="{{ url_for('static', filename='icons/cash-register.svg') }}" alt=""><span>Caja</span></a>
+        {% endif %}
+        {% if puede('cocina.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'cocina.inicio' }}" href="{{ url_for('cocina.inicio') }}"><i class="bi bi-bell"></i><span>Cocina e inventario</span></a>
+        {% endif %}
+        {% if puede('productos.ver') %}
+        <a class="{{ 'active' if endpoint_actual.startswith('productos.') }}" href="{{ url_for('productos.listar') }}"><i class="bi bi-box-seam"></i><span>Productos</span></a>
+        {% endif %}
+        {% if puede('mesas.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'mesas.listar' }}" href="{{ url_for('mesas.listar') }}"><i class="bi bi-grid-3x3-gap"></i><span>Mesas</span></a>
+        {% endif %}
+        {% if puede('clientes.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'clientes.listar' }}" href="{{ url_for('clientes.listar') }}"><i class="bi bi-people"></i><span>Clientes</span></a>
+        {% endif %}
+        {% if puede('reservaciones.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'reservaciones.listar' }}" href="{{ url_for('reservaciones.listar') }}"><i class="bi bi-calendar-check"></i><span>Reservaciones</span></a>
+        {% endif %}
+        {% if puede('empleados.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'empleados.listar' }}" href="{{ url_for('empleados.listar') }}"><i class="bi bi-person-badge"></i><span>Empleados</span></a>
+        {% endif %}
+        {% if puede('usuarios.gestionar') %}
+        <a class="{{ 'active' if endpoint_actual == 'usuarios.listar' }}" href="{{ url_for('usuarios.listar') }}"><i class="bi bi-person-lock"></i><span>Usuarios</span></a>
+        {% endif %}
+        {% if puede('roles.gestionar') %}
+        <a class="{{ 'active' if endpoint_actual == 'roles.listar' }}" href="{{ url_for('roles.listar') }}"><i class="bi bi-shield-check"></i><span>Roles y permisos</span></a>
+        {% endif %}
+        {% if puede('bitacoras.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'bitacoras.listar' }}" href="{{ url_for('bitacoras.listar') }}"><i class="bi bi-clock-history"></i><span>Bitácoras</span></a>
+        {% endif %}
+        {% if puede('reportes.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'reportes.inicio' }}" href="{{ url_for('reportes.inicio') }}"><i class="bi bi-bar-chart"></i><span>Reportes</span></a>
+        {% endif %}
+        {% if puede('respaldos.ver') %}
+        <a class="{{ 'active' if endpoint_actual == 'respaldos.listar' }}" href="{{ url_for('respaldos.listar') }}"><i class="bi bi-database-down"></i><span>Respaldos</span></a>
+        {% endif %}
+    </nav>
+    <form action="{{ url_for('autenticacion.cerrar_sesion') }}" method="post" class="sidebar-footer">
+        <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+        <button class="sidebar-logout"><i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span></button>
+    </form>
+</aside>
+
+<header class="topbar">
+    <button class="mobile-menu" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir menú">
+        <i class="bi bi-list"></i>
+    </button>
+    <nav class="breadcrumb-bar" aria-label="Migas de pan">
+        <a href="{{ url_for('panel.inicio') }}">Inicio</a><i class="bi bi-chevron-right"></i><span>{{ nombre_pagina }}</span>
+    </nav>
+    <div class="topbar-actions">
+        <span class="system-clock d-none d-md-flex"><i class="bi bi-calendar3"></i><span id="current-date"></span><span class="clock-divider"></span><i class="bi bi-clock"></i><span id="current-time"></span></span>
+        <button class="icon-button" id="theme-toggle" type="button" aria-label="Cambiar tema"><i class="bi bi-sun"></i></button>
+        <div class="profile-chip"><span class="profile-avatar"><i class="bi bi-person-fill"></i></span><span><strong>{{ usuario_actual.nombre }}</strong><small>{{ session.get('rol') }}</small></span></div>
+    </div>
+</header>
+
+<main class="content">
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% for categoria, mensaje in mensajes %}
+        <div class="alert alert-{{ categoria }} alert-dismissible fade show app-alert" role="alert">
+            {{ mensaje }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+        {% endfor %}
+    {% endwith %}
+    {% block contenido %}{% endblock %}
+</main>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js', v='2.0.0') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

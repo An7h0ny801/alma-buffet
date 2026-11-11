@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block titulo %}Roles y permisos - Alma Buffet{% endblock %}
+{% macro item_permiso(permiso, grupo, accion_boton) %}
+<li class="perm-item" data-codigo="{{ permiso.codigo }}">
+    <span class="matrix-action matrix-action-{{ 'view' if permiso.codigo.endswith('.ver') else 'manage' }}">{{ 'Ver' if permiso.codigo.endswith('.ver') else 'Gestionar' }}</span>
+    <span class="perm-text"><strong>{{ permiso.nombre }}</strong><small>{{ permiso.codigo }}</small></span>
+    <span class="perm-flag" data-flag></span>
+    {% if accion_boton == 'quitar' %}
+    <button type="button" class="btn btn-outline-danger btn-sm" data-quitar="{{ permiso.codigo }}" aria-label="Quitar {{ permiso.nombre }}"><i class="bi bi-dash-lg"></i> Quitar</button>
+    {% else %}
+    <button type="button" class="btn btn-outline-success btn-sm" data-agregar="{{ permiso.codigo }}" aria-label="Agregar {{ permiso.nombre }}"><i class="bi bi-plus-lg"></i> Agregar</button>
+    {% endif %}
+</li>
+{% endmacro %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Roles y permisos</h1><p>Seleccione un rol para ver los permisos que tiene y los que se le pueden agregar.</p></div></div>
+
+<div class="role-cards mb-2">
+    {% for rol in roles if not rol.protegido %}
+    {% set cantidad = rol.permisos|length %}
+    <a class="role-card {{ 'active' if seleccionado and seleccionado.id_rol == rol.id_rol }}" href="{{ url_for('roles.listar', rol=rol.id_rol) }}" data-salir>
+        <span class="role-card-icon"><i class="bi bi-person-gear"></i></span>
+        <span class="role-card-body">
+            <strong>{{ rol.nombre }}</strong>
+            <small>{{ rol.usuarios|length }} usuario{{ '' if rol.usuarios|length == 1 else 's' }} · {{ cantidad }} de {{ total_permisos }} permisos</small>
+            <span class="role-card-bar"><span style="width: {{ (cantidad * 100 / total_permisos)|round|int if total_permisos else 0 }}%"></span></span>
+        </span>
+        <i class="bi bi-chevron-right role-card-arrow"></i>
+    </a>
+    {% endfor %}
+    <button class="role-card role-card-new" type="button" data-bs-toggle="collapse" data-bs-target="#nuevo-rol" aria-expanded="false" aria-controls="nuevo-rol">
+        <span class="role-card-icon"><i class="bi bi-plus-lg"></i></span>
+        <span class="role-card-body"><strong>Nuevo rol</strong><small>Crear un rol vacío o copiar otro</small></span>
+    </button>
+</div>
+<p class="text-body-secondary mb-3"><small><i class="bi bi-shield-fill-check"></i> El rol Administrador no aparece porque siempre tiene todos los permisos.</small></p>
+
+<div class="collapse mb-4" id="nuevo-rol">
+    <form class="card form-card-wide" method="post" action="{{ url_for('roles.guardar') }}" data-salir>
+        <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+        <div class="card-header"><span><i class="bi bi-shield-plus"></i> Nuevo rol</span></div>
+        <div class="card-body new-role-fields">
+            <div><label class="form-label" for="nuevo-rol-nombre">Nombre</label>
+            <input class="form-control" id="nuevo-rol-nombre" name="nombre" maxlength="30" required pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+"></div>
+            <div><label class="form-label" for="nuevo-rol-base">Copiar permisos de</label>
+            <select class="form-select" id="nuevo-rol-base" name="id_rol_base">
+                <option value="">Ninguno (rol vacío)</option>
+                {% for rol in roles %}<option value="{{ rol.id_rol }}">{{ rol.nombre }}</option>{% endfor %}
+            </select></div>
+            <div class="align-self-end"><button class="btn btn-primary">Crear rol</button></div>
+        </div>
+    </form>
+</div>
+
+{% if not seleccionado %}
+<section class="card">
+    <div class="empty-state">
+        <i class="bi bi-hand-index"></i>
+        <strong>Seleccione un rol</strong>
+        <p class="mb-0">Elija uno de los roles de arriba para ver y modificar sus permisos.</p>
+    </div>
+</section>
+{% else %}
+<section class="card role-editor">
+    <div class="card-header role-editor-header">
+        <span><i class="bi bi-person-gear"></i> Permisos del rol <strong>{{ seleccionado.nombre }}</strong></span>
+        <span class="role-editor-tools">
+            <form method="post" action="{{ url_for('roles.renombrar', id_rol=seleccionado.id_rol) }}" class="role-rename" data-salir>
+                <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+                <input class="form-control form-control-sm" name="nombre" value="{{ seleccionado.nombre }}" maxlength="30" required pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]+" aria-label="Nuevo nombre del rol">
+                <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Renombrar</button>
+            </form>
+            <form method="post" action="{{ url_for('roles.eliminar', id_rol=seleccionado.id_rol) }}" data-confirmar="¿Eliminar el rol {{ seleccionado.nombre }}?" data-salir>
+                <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+                <button class="btn btn-outline-danger btn-sm" {% if seleccionado.usuarios %}disabled title="Tiene usuarios asignados"{% endif %}><i class="bi bi-trash"></i> Eliminar</button>
+            </form>
+        </span>
+    </div>
+
+    <form method="post" action="{{ url_for('roles.guardar_permisos', id_rol=seleccionado.id_rol) }}" id="permisos-rol" data-rol-nombre="{{ seleccionado.nombre }}">
+        <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+        <div data-campos>{% for codigo in asignados|sort %}<input type="hidden" name="permisos" value="{{ codigo }}">{% endfor %}</div>
+        <div class="perm-columns">
+            <div class="perm-column">
+                <div class="perm-column-title">
+                    <span><i class="bi bi-check2-circle"></i> Permisos asignados <span class="badge text-bg-secondary" data-contador="asignados">{{ asignados|length }}</span></span>
+                    <button type="button" class="btn btn-link btn-sm p-0" data-quitar-todos>Quitar todos</button>
+                </div>
+                <p class="perm-empty" data-vacio="asignados" {% if asignados %}hidden{% endif %}>Este rol no tiene permisos. Agregue desde la lista de la derecha.</p>
+                {% for grupo in grupos %}
+                <div class="perm-group" data-lista="asignados">
+                    <h3><i class="bi {{ grupo.icono }}"></i> {{ grupo.nombre }}</h3>
+                    <ul>{% for permiso in grupo.permisos %}{{ item_permiso(permiso, grupo, 'quitar') }}{% endfor %}</ul>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="perm-column perm-column-available">
+                <div class="perm-column-title">
+                    <span><i class="bi bi-plus-circle"></i> Permisos que se pueden agregar <span class="badge text-bg-secondary" data-contador="disponibles">{{ total_permisos - asignados|length }}</span></span>
+                    <button type="button" class="btn btn-link btn-sm p-0" data-agregar-todos>Agregar todos</button>
+                </div>
+                <p class="perm-empty" data-vacio="disponibles" {% if asignados|length < total_permisos %}hidden{% endif %}>El rol ya tiene todos los permisos.</p>
+                {% for grupo in grupos %}
+                <div class="perm-group" data-lista="disponibles">
+                    <h3><i class="bi {{ grupo.icono }}"></i> {{ grupo.nombre }}</h3>
+                    <ul>{% for permiso in grupo.permisos %}{{ item_permiso(permiso, grupo, 'agregar') }}{% endfor %}</ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card-footer matrix-footer">
+            <small><i class="bi bi-info-circle"></i> Agregar un permiso de <strong>Gestionar</strong> agrega también el de <strong>Ver</strong> del mismo módulo; quitar <strong>Ver</strong> quita también <strong>Gestionar</strong>.</small>
+            <span class="matrix-actions">
+                <span class="matrix-pending" data-pendiente hidden><i class="bi bi-exclamation-triangle-fill"></i> Cambios sin guardar</span>
+                <button type="button" class="btn btn-outline-secondary" data-descartar hidden>Descartar</button>
+                <button class="btn btn-primary"><i class="bi bi-check2"></i> Guardar cambios</button>
+            </span>
+        </div>
+    </form>
+</section>
+
+<div class="modal fade" id="modal-sin-guardar" tabindex="-1" aria-labelledby="modal-sin-guardar-titulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="modal-sin-guardar-titulo"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Cambios sin guardar</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>Modificó los permisos del rol <strong>{{ seleccionado.nombre }}</strong> y todavía no los ha guardado.</p>
+                <ul class="mb-0" data-resumen></ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Seguir editando</button>
+                <button type="button" class="btn btn-outline-danger" data-salir-sin-guardar>Salir sin guardar</button>
+                <button type="button" class="btn btn-primary" data-guardar-modal><i class="bi bi-check2"></i> Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if seleccionado %}
+<script nonce="{{ csp_nonce() }}">
+(() => {
+    const formulario = document.getElementById("permisos-rol");
+    const campos = formulario.querySelector("[data-campos]");
+    const todos = [...new Set([...formulario.querySelectorAll(".perm-item")].map((i) => i.dataset.codigo))];
+    const original = new Set([...campos.querySelectorAll("input")].map((i) => i.value));
+    let actual = new Set(original);
+    let salidaPendiente = null;
+    let guardando = false;
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("modal-sin-guardar"));
+    const nombres = Object.fromEntries(
+        [...formulario.querySelectorAll(".perm-item")].map((i) => [i.dataset.codigo, i.querySelector("strong").textContent])
+    );
+
+    const hayCambios = () => actual.size !== original.size || [...actual].some((c) => !original.has(c));
+
+    function agregar(codigo) {
+        actual.add(codigo);
+        const [modulo, accion] = codigo.split(".");
+        if (accion === "gestionar" && todos.includes(`${modulo}.ver`)) actual.add(`${modulo}.ver`);
+    }
+
+    function quitar(codigo) {
+        actual.delete(codigo);
+        const [modulo, accion] = codigo.split(".");
+        if (accion === "ver") actual.delete(`${modulo}.gestionar`);
+    }
+
+    function pintar() {
+        formulario.querySelectorAll(".perm-group").forEach((grupo) => {
+            const enAsignados = grupo.dataset.lista === "asignados";
+            let visibles = 0;
+            grupo.querySelectorAll(".perm-item").forEach((item) => {
+                const codigo = item.dataset.codigo;
+                const visible = actual.has(codigo) === enAsignados;
+                item.hidden = !visible;
+                if (visible) visibles += 1;
+                const nuevo = enAsignados && !original.has(codigo);
+                const quitado = !enAsignados && original.has(codigo);
+                item.classList.toggle("perm-changed", nuevo || quitado);
+                item.querySelector("[data-flag]").textContent = nuevo ? "Nuevo" : quitado ? "Se quitará" : "";
+            });
+            grupo.hidden = visibles === 0;
+        });
+        formulario.querySelector('[data-contador="asignados"]').textContent = actual.size;
+        formulario.querySelector('[data-contador="disponibles"]').textContent = todos.length - actual.size;
+        formulario.querySelector('[data-vacio="asignados"]').hidden = actual.size > 0;
+        formulario.querySelector('[data-vacio="disponibles"]').hidden = actual.size < todos.length;
+        campos.replaceChildren(...[...actual].sort().map((codigo) => {
+            const campo = document.createElement("input");
+            campo.type = "hidden";
+            campo.name = "permisos";
+            campo.value = codigo;
+            return campo;
+        }));
+        const cambios = hayCambios();
+        formulario.querySelector("[data-pendiente]").hidden = !cambios;
+        formulario.querySelector("[data-descartar]").hidden = !cambios;
+    }
+
+    formulario.addEventListener("click", (evento) => {
+        const boton = evento.target.closest("button");
+        if (!boton) return;
+        if (boton.dataset.agregar) agregar(boton.dataset.agregar);
+        else if (boton.dataset.quitar) quitar(boton.dataset.quitar);
+        else if (boton.hasAttribute("data-agregar-todos")) todos.forEach(agregar);
+        else if (boton.hasAttribute("data-quitar-todos")) actual.clear();
+        else if (boton.hasAttribute("data-descartar")) actual = new Set(original);
+        else return;
+        pintar();
+    });
+
+    function resumen() {
+        const lista = document.querySelector("#modal-sin-guardar [data-resumen]");
+        const agregados = [...actual].filter((c) => !original.has(c));
+        const quitados = [...original].filter((c) => !actual.has(c));
+        lista.replaceChildren(
+            ...agregados.map((c) => Object.assign(document.createElement("li"), { textContent: `Se agregará: ${nombres[c]}` })),
+            ...quitados.map((c) => Object.assign(document.createElement("li"), { textContent: `Se quitará: ${nombres[c]}` }))
+        );
+    }
+
+    function avisar(continuar) {
+        salidaPendiente = continuar;
+        resumen();
+        modal.show();
+    }
+
+    document.addEventListener("click", (evento) => {
+        const enlace = evento.target.closest("a[href]");
+        if (!enlace || guardando || !hayCambios() || enlace.target === "_blank") return;
+        if (enlace.getAttribute("href").startsWith("#")) return;
+        evento.preventDefault();
+        avisar(() => { window.location.href = enlace.href; });
+    });
+
+    document.querySelectorAll("form[data-salir], form[action$='cerrar_sesion'], .sidebar-footer").forEach((otro) => {
+        otro.addEventListener("submit", (evento) => {
+            if (guardando || !hayCambios() || otro.dataset.confirmado) return;
+            evento.preventDefault();
+            evento.stopImmediatePropagation();
+            avisar(() => { otro.dataset.confirmado = "1"; guardando = true; otro.requestSubmit(); });
+        }, true);
+    });
+
+    document.querySelector("[data-salir-sin-guardar]").addEventListener("click", () => {
+        guardando = true;
+        modal.hide();
+        if (salidaPendiente) salidaPendiente();
+    });
+
+    document.querySelector("[data-guardar-modal]").addEventListener("click", () => {
+        guardando = true;
+        formulario.submit();
+    });
+
+    formulario.addEventListener("submit", () => { guardando = true; });
+
+    window.addEventListener("beforeunload", (evento) => {
+        if (!guardando && hayCambios()) {
+            evento.preventDefault();
+            evento.returnValue = "";
+        }
+    });
+
+    pintar();
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='icons/alma-buffet.svg') }}">
+    <script nonce="{{ csp_nonce() }}">document.documentElement.dataset.bsTheme = localStorage.getItem("alma-theme") || "dark";</script>
+    <title>Alma Buffet - Ingreso</title>
+    <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+</head>
+<body class="login-page">
+<button class="icon-button login-theme" id="theme-toggle" type="button" aria-label="Cambiar tema"><i class="bi bi-sun"></i></button>
+<main class="login-shell">
+    <section class="login-brand-panel">
+        <div class="login-logo"><i class="bi bi-cup-hot"></i></div>
+        <h1>Alma Buffet</h1>
+        <p>Control de mostrador, caja, mesas e inventario en un solo lugar.</p>
+        <div class="login-feature"><i class="bi bi-check2-circle"></i><span>Operación rápida y organizada</span></div>
+        <div class="login-feature"><i class="bi bi-check2-circle"></i><span>Información protegida por roles</span></div>
+    </section>
+    <section class="login-form-panel">
+        <div class="login-form-heading"><span>Bienvenido</span><h2>Iniciar sesión</h2><p>Ingrese sus credenciales para continuar.</p></div>
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+            {% for categoria, mensaje in mensajes %}<div class="alert alert-{{ categoria }}">{{ mensaje }}</div>{% endfor %}
+        {% endwith %}
+        <form action="{{ url_for('autenticacion.validar_login') }}" method="post">
+            <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+            <div class="mb-3"><label class="form-label">Correo electrónico</label><div class="input-icon"><i class="bi bi-envelope"></i><input type="email" name="correo" class="form-control" required autocomplete="username" placeholder="usuario@alma.com"></div></div>
+            <div class="mb-4"><label class="form-label">Contraseña</label><div class="input-icon"><i class="bi bi-lock"></i><input type="password" name="password" class="form-control" required autocomplete="current-password" placeholder="••••••••"></div></div>
+            <button class="btn btn-primary w-100 btn-lg">Ingresar al sistema <i class="bi bi-arrow-right"></i></button>
+        </form>
+    </section>
+</main>
+<script src="{{ url_for('static', filename='js/app.js', v='2.0.0') }}"></script>
+</body>
+</html>

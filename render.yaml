@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: alma-buffet
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /salud
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: produccion
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "1433"
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_MIGRACION_USER
+        sync: false
+      - key: DB_MIGRACION_PASSWORD
+        sync: false
+      - key: DB_ENCRYPT
+        value: "1"
+      - key: DB_TRUST_SERVER_CERTIFICATE
+        value: "0"
+      - key: ZONA_HORARIA_BD
+        value: UTC
+      - key: ADMIN_CORREO
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_NOMBRE
+        sync: false

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Productos - Alma Buffet{% endblock %}
+{% block contenido %}
+<div class="page-heading">
+    <div><h1>Productos</h1><p>Inventario por porciones, vasos y botellas.</p></div>
+    {% if puede('productos.gestionar') %}<a class="btn btn-primary" href="{{ url_for('productos.nuevo') }}">Nuevo producto</a>{% endif %}
+</div>
+<div class="card"><div class="table-responsive"><table class="table align-middle">
+<thead><tr><th>Producto</th><th>Unidad</th><th>Precio</th><th>Stock</th><th>Estado</th><th></th></tr></thead>
+<tbody>
+{% for producto in productos %}
+<tr class="{% if not producto.activo %}opacity-50{% elif producto.stock_unidades <= 3 %}low-stock-row{% endif %}">
+    <td><strong>{{ producto.nombre }}</strong>{% if producto.es_fresco_gratuito %}<br><small>Vaso incluido sin costo</small>{% endif %}</td>
+    <td>{{ producto.unidad_medida }}</td>
+    <td>₡{{ "{:,.2f}".format(producto.precio_unidad) }}</td>
+    <td>{{ producto.stock_unidades }}</td>
+    <td>{{ "Activo" if producto.activo else "Inactivo" }}</td>
+    <td class="text-end">
+        {% if puede('productos.gestionar') %}
+        <a class="btn btn-outline-warning btn-sm" href="{{ url_for('productos.editar', id_producto=producto.id_producto) }}">Editar</a>
+        {% if producto.activo %}<form class="d-inline" method="post" action="{{ url_for('productos.eliminar', id_producto=producto.id_producto) }}">
+            <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}"><button class="btn btn-outline-danger btn-sm">Eliminar</button>
+        </form>{% endif %}
+        {% endif %}
+    </td>
+</tr>
+{% else %}<tr><td colspan="6">No hay productos.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

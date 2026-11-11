@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titulo %}Mostrador - Alma Buffet{% endblock %}
+{% block contenido %}
+<div class="page-heading">
+    <div>
+        <h1>Selección del cliente</h1>
+        <p>Registre las porciones, vasos y botellas solicitadas. Al enviar, el inventario se descuenta.</p>
+    </div>
+</div>
+<form action="{{ url_for('tickets.enviar') }}" method="post">
+    <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+    {% for unidad in ['Porción', 'Vaso', 'Botella'] %}
+    <section class="card mb-4">
+        <div class="card-header">{{ unidad }}{% if unidad != 'Porción' %}s{% else %}es{% endif %}</div>
+        <div class="table-responsive">
+            <table class="table align-middle product-table">
+                <thead><tr><th>Producto</th><th>Precio</th><th>Disponible</th><th class="quantity-col">Cantidad</th></tr></thead>
+                <tbody>
+                {% for producto in productos if producto.unidad_medida == unidad %}
+                <tr class="{% if producto.stock_unidades <= 3 %}low-stock-row{% endif %}">
+                    <td data-label="Producto">
+                        <strong>{{ producto.nombre }}</strong>
+                        {% if producto.es_fresco_gratuito %}<span class="badge bg-success">1 gratis por ticket</span>{% endif %}
+                    </td>
+                    <td data-label="Precio">₡{{ "{:,.2f}".format(producto.precio_unidad) }}</td>
+                    <td data-label="Disponible">{{ producto.stock_unidades }} {{ producto.unidad_medida|lower }}{% if producto.stock_unidades != 1 %}s{% endif %}</td>
+                    <td data-label="Cantidad"><input class="form-control quantity-input" type="number" min="0" max="{{ producto.stock_unidades }}" value="0" name="cantidad_{{ producto.id_producto }}"></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-muted">No hay productos de este tipo.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endfor %}
+    <div class="sticky-action">
+        <button class="btn btn-primary btn-lg"><i class="bi bi-send"></i> Enviar ticket a caja</button>
+    </div>
+</form>
+{% endblock %}

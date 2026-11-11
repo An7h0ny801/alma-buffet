@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Factura #{{ ticket.id_ticket }}{% endblock %}
+{% block contenido %}
+<div class="invoice-shell card">
+    <div class="card-body p-4 p-md-5">
+        <div class="invoice-header">
+            <div><h1>Alma Buffet</h1><p>Factura digital #{{ ticket.id_ticket }}</p></div>
+            <div class="text-end"><strong>{{ ticket.modalidad }}</strong>{% if ticket.mesa %}<br>Mesa {{ ticket.mesa.numero_mesa }}{% endif %}</div>
+        </div>
+        <table class="table my-4"><thead><tr><th>Producto</th><th>Cantidad</th><th class="text-end">Subtotal</th></tr></thead>
+        <tbody>{% for detalle in ticket.detalles %}<tr><td>{{ detalle.producto.nombre }}</td><td>{{ detalle.cantidad_unidades }} {{ detalle.producto.unidad_medida|lower }}(s)</td><td class="text-end">₡{{ "{:,.2f}".format(detalle.subtotal) }}</td></tr>{% endfor %}</tbody></table>
+        <div class="totals invoice-totals">
+            <span>Subtotal <strong>₡{{ "{:,.2f}".format(ticket.subtotal) }}</strong></span>
+            <span>IVA 13% <strong>₡{{ "{:,.2f}".format(ticket.impuesto) }}</strong></span>
+            <span class="grand-total">Total <strong>₡{{ "{:,.2f}".format(ticket.total) }}</strong></span>
+            <span>Pago <strong>{{ ticket.pago.metodo_pago }}</strong></span>
+        </div>
+        <div class="d-flex gap-2 mt-4 flex-wrap">
+            <a href="{{ url_for('reportes.factura_pdf', id_ticket=ticket.id_ticket) }}" class="btn btn-danger">Descargar PDF</a>
+            <button data-accion="imprimir" class="btn btn-outline-dark">Imprimir</button>
+            <a href="{{ url_for('tickets.caja') }}" class="btn btn-primary">Volver a caja</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

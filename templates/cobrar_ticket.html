@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block titulo %}Cobrar ticket #{{ ticket.id_ticket }}{% endblock %}
+{% block contenido %}
+<div class="page-heading"><div><h1>Cobrar ticket #{{ ticket.id_ticket }}</h1><p>Confirme el consumo, modalidad y método de pago.</p></div></div>
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr><th>Producto</th><th>Cantidad</th><th>Subtotal</th></tr></thead>
+                    <tbody>
+                    {% for detalle in ticket.detalles %}
+                    <tr><td>{{ detalle.producto.nombre }}</td><td>{{ detalle.cantidad_unidades }} {{ detalle.producto.unidad_medida|lower }}(s)</td><td>₡{{ "{:,.2f}".format(detalle.subtotal) }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="totals">
+                <span>Subtotal <strong>₡{{ "{:,.2f}".format(ticket.subtotal) }}</strong></span>
+                <span>IVA 13% <strong>₡{{ "{:,.2f}".format(ticket.impuesto) }}</strong></span>
+                <span class="grand-total">Total <strong>₡{{ "{:,.2f}".format(ticket.total) }}</strong></span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <form class="card" action="{{ url_for('tickets.procesar_pago', id_ticket=ticket.id_ticket) }}" method="post">
+            <input type="hidden" name="_token_csrf" value="{{ token_csrf() }}">
+            <div class="card-body">
+                <label>Modalidad</label>
+                <select class="form-select mb-3" name="modalidad" id="modalidad">
+                    <option value="llevar">Para llevar</option>
+                    <option value="local" {% if not mesas %}disabled{% endif %}>Comer en el local</option>
+                </select>
+                {% if not mesas %}<div class="alert alert-warning">No hay mesas disponibles. Este ticket debe ser para llevar.</div>{% endif %}
+                <div id="mesa-field" class="mb-3 d-none">
+                    <label>Mesa disponible</label>
+                    <select class="form-select" name="id_mesa">
+                        {% for mesa in mesas %}<option value="{{ mesa.id_mesa }}">Mesa {{ mesa.numero_mesa }} · {{ mesa.capacidad }} personas</option>{% endfor %}
+                    </select>
+                </div>
+                <label>Método de pago</label>
+                <select class="form-select mb-3" name="metodo_pago" id="metodo">
+                    <option>Efectivo</option><option>SINPE</option><option>Tarjeta</option>
+                </select>
+                <div id="sinpe-field" class="mb-3 d-none">
+                    <label>Referencia SINPE</label><input class="form-control" name="referencia">
+                </div>
+                <div id="tarjeta-field" class="mb-3 d-none">
+                    <label>Resultado simulado del datáfono</label>
+                    <select class="form-select" name="resultado_tarjeta"><option value="aprobado">Aprobado</option><option value="rechazado">Rechazado</option></select>
+                </div>
+                <button class="btn btn-primary w-100 btn-lg">Confirmar pago</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}">
+const modalidad = document.getElementById("modalidad");
+const metodo = document.getElementById("metodo");
+function updatePaymentFields() {
+    document.getElementById("mesa-field").classList.toggle("d-none", modalidad.value !== "local");
+    document.getElementById("sinpe-field").classList.toggle("d-none", metodo.value !== "SINPE");
+    document.getElementById("tarjeta-field").classList.toggle("d-none", metodo.value !== "Tarjeta");
+}
+modalidad.addEventListener("change", updatePaymentFields);
+metodo.addEventListener("change", updatePaymentFields);
+updatePaymentFields();
+</script>
+{% endblock %}
