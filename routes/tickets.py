@@ -9,6 +9,7 @@ from services.tickets import (
     anular_ticket,
     crear_ticket,
     procesar_pago as procesar_pago_ticket,
+    totales_caja,
 )
 
 
@@ -54,6 +55,7 @@ def caja():
     return render_template(
         "caja.html",
         pendientes=pendientes,
+        totales=totales_caja(ticket.id_ticket for ticket in pendientes),
         local_lleno=len(disponibles) == 0,
         mesas_disponibles=len(disponibles),
         mesas_totales=Mesa.query.count(),

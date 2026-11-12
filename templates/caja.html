@@ -18,14 +18,17 @@
     </div>
     <div class="table-responsive">
         <table class="table align-middle queue-table">
-            <thead><tr><th>Ticket</th><th>Hora</th><th>Unidades</th><th>Subtotal</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
+            <thead><tr><th>Ticket</th><th>Hora</th><th>Unidades</th><th>Subtotal</th><th>IVA</th><th>Total</th><th>Estado</th><th class="text-end">Acciones</th></tr></thead>
             <tbody>
             {% for ticket in pendientes %}
+            {% set montos = totales[ticket.id_ticket] %}
             <tr>
                 <td data-label="Ticket"><strong>#{{ ticket.id_ticket }}</strong></td>
                 <td data-label="Hora">{{ ticket.hora_inicio.strftime('%H:%M') }}</td>
                 <td data-label="Unidades">{{ ticket.detalles|sum(attribute='cantidad_unidades') }}</td>
-                <td data-label="Subtotal">₡{{ "{:,.2f}".format(ticket.subtotal) }}</td>
+                <td data-label="Subtotal">₡{{ "{:,.2f}".format(montos.subtotal) }}</td>
+                <td data-label="IVA">₡{{ "{:,.2f}".format(montos.impuesto) }}</td>
+                <td data-label="Total"><strong>₡{{ "{:,.2f}".format(montos.total) }}</strong></td>
                 <td data-label="Estado"><span class="status-badge status-warning"><i class="bi bi-clock"></i> Pendiente</span></td>
                 <td data-label="Acciones" class="text-end action-cell">
                     <a class="btn btn-primary btn-sm" href="{{ url_for('tickets.cobrar', id_ticket=ticket.id_ticket) }}"><img class="button-icon" src="{{ url_for('static', filename='icons/cash-register.svg') }}" alt="">Cobrar</a>
@@ -35,7 +38,7 @@
                     </form>
                 </td>
             </tr>
-            {% else %}<tr><td colspan="6" class="empty-state"><i class="bi bi-check2-circle"></i><strong>No hay tickets esperando en caja.</strong></td></tr>{% endfor %}
+            {% else %}<tr><td colspan="8" class="empty-state"><i class="bi bi-check2-circle"></i><strong>No hay tickets esperando en caja.</strong></td></tr>{% endfor %}
             </tbody>
         </table>
     </div>

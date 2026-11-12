@@ -111,6 +111,15 @@ def prueba_anular_devuelve_inventario(admin):
     assert _stock(app, id_producto) == 10
 
 
+def prueba_caja_muestra_montos_de_la_vista(admin):
+    id_ticket = crear_ticket(admin, {crear_producto(admin, precio="2500"): 2})
+    total_vista = valor(admin.application, "SELECT total FROM vCaja WHERE idTicket = :t", t=id_ticket)
+    assert total_vista == 5650
+    html = texto(admin.get("/caja"))
+    assert f"#{id_ticket}" in html
+    assert "₡5,000.00" in html and "₡650.00" in html and "₡5,650.00" in html
+
+
 def prueba_factura_y_pdf(admin):
     id_ticket = crear_ticket(admin, {crear_producto(admin): 1})
     enviar(admin, f"/caja/ticket/{id_ticket}/pagar", {"metodo_pago": "Efectivo", "modalidad": "llevar"})

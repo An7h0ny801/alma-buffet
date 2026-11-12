@@ -2,12 +2,25 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import bindparam, select, text
 
 from models import DetalleTicket, Mesa, Pago, Producto, Ticket
 from core.base_datos import BLOQUEO_FILA, db
 from core.procedimientos import total_ticket
 from services.mesas import mesa_disponible
+
+
+_TOTALES_CAJA = text(
+    "SELECT idTicket, subtotal, impuesto, total FROM dbo.vCaja WHERE idTicket IN :ids"
+).bindparams(bindparam("ids", expanding=True))
+
+
+def totales_caja(ids_tickets):
+    ids_tickets = list(ids_tickets)
+    if not ids_tickets:
+        return {}
+    filas = db.session.execute(_TOTALES_CAJA, {"ids": ids_tickets}).mappings().all()
+    return {fila["idTicket"]: fila for fila in filas}
 
 
 METODOS_PAGO = ("Efectivo", "SINPE", "Tarjeta")
