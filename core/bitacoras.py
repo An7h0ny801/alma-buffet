@@ -11,8 +11,9 @@ _ASIGNAR_EMPLEADO = text(
 
 
 def id_empleado_actual():
-    usuario = g.get("usuario") if has_app_context() else None
-    return usuario.id_empleado if usuario else None
+    if not has_app_context() or not g.get("usuario"):
+        return None
+    return g.get("id_empleado")
 
 
 def _asignar_empleado_a_conexion(sesion, transaccion, conexion):

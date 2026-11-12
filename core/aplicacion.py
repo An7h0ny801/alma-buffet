@@ -83,6 +83,7 @@ def _registrar_peticiones(app):
             vigente, por_inactividad = sesion_vigente(usuario)
             if vigente:
                 g.usuario = usuario
+                g.id_empleado = usuario.id_empleado
                 asignar_empleado_en_transaccion(db.session)
             else:
                 session.clear()
